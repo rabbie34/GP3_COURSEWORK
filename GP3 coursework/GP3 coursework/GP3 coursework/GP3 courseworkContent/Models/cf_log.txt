@@ -1,0 +1,1 @@
+Warning: Invalid texture in material Plastic_laminate_006__wood-texture_jpg_005 (file: 'C:\Users\Robert\Desktop\GP3 coursework\GP3 coursework\GP3 coursework\GP3 courseworkContent\Models\fencetext.fbx') [ (line 0)]
