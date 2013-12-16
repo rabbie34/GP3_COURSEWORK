@@ -257,6 +257,14 @@ namespace GP3coursework
 
             if (gameState.IsConnected)
             {
+                if (gameState.Triggers.Left > 0 && mdlVelocity.Length() < 0.01f)
+                {
+                    mainCamera = camera2;
+                }
+                else
+                {
+                    mainCamera = camera1;
+                }
                 mdlVelocityAdd *= gameState.ThumbSticks.Left.Y / 100;
                 mdlVelocity += mdlVelocityAdd;
                 if (mainCamera == camera1)
@@ -307,14 +315,7 @@ namespace GP3coursework
                 //tardisSoundInstance.Play();
             }
 
-            if (gameState.Triggers.Left > 0 && mdlVelocity.Length() < 0.01f)
-            {
-                mainCamera = camera2;
-            }
-            else
-            {
-                mainCamera = camera1;
-            }
+            
             if (keyboardState.IsKeyDown(Keys.LeftShift) && !lastState.IsKeyDown(Keys.LeftShift))
             {
                 // Rotate right.
