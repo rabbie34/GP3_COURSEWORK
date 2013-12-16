@@ -68,12 +68,12 @@ namespace GP3coursework
         private float mdlTurretRotation = 0.0f;
         private float mdlBarrelPitch = 0.0f;
 
-        // create an array of enemy daleks
+        // create an array of enemy targets
         private Model mdlDalek;
         private Matrix[] mdDalekTransforms;
         private Daleks[] dalekList = new Daleks[GameConstants.NumDaleks];
 
-        // create an array of laser bullets
+        // create an array of tank shells
         private Model mdlLaser;
         private Matrix[] mdlLaserTransforms;
         private Laser[] laserList = new Laser[GameConstants.NumLasers];
@@ -119,6 +119,7 @@ namespace GP3coursework
             projectionMatrix = Matrix.CreatePerspectiveFieldOfView(
                 MathHelper.ToRadians(45), aspectRatio, 1.0f, 350.0f);
             
+            // initialize our two cameras,
             camera1 = new Camera(graphics, new Vector3(10.0f, 5.0f, 0.0001f), new Vector3(0,0,0), 45);
             camera2 = new Camera(graphics, new Vector3(10.0f, -5.0f, 0.0001f), new Vector3(0, 0, 0), 25);
 
@@ -139,6 +140,8 @@ namespace GP3coursework
 
         private void setUpEffectTransforms()
         {
+            // update all the models positions based on where the camera is located.
+
             mdlTankBarrelTransforms = SetupEffectTransformDefaults(mdlTankBarrel);
 
             mdlTankTracksTransforms = SetupEffectTransformDefaults(mdlTankTracks);
@@ -159,13 +162,14 @@ namespace GP3coursework
             KeyboardState keyboardState = Keyboard.GetState();
             GamePadState gameState = GamePad.GetState(PlayerIndex.One);
 
-            // Create some velocity if the right trigger is down.
+            // instantiates our velocity variable.
             Vector3 mdlVelocityAdd = Vector3.Zero;
 
             // Find out what direction we should be thrusting, using rotation.
             mdlVelocityAdd.X = -(float)Math.Sin(mdlRotation);
             mdlVelocityAdd.Z = -(float)Math.Cos(mdlRotation);
 
+            // closes the game if escape is pressed
             if (keyboardState.IsKeyDown(Keys.Escape))
             {
                 this.Exit();
@@ -257,6 +261,7 @@ namespace GP3coursework
 
             if (gameState.IsConnected)
             {
+                // if the left trigger is being pulled AND the tank is stationary, switch to sniper mode.
                 if (gameState.Triggers.Left > 0 && mdlVelocity.Length() < 0.01f)
                 {
                     mainCamera = camera2;
@@ -265,31 +270,36 @@ namespace GP3coursework
                 {
                     mainCamera = camera1;
                 }
+
+                // take the input from the left thumbstick to maneuver the tank.
                 mdlVelocityAdd *= gameState.ThumbSticks.Left.Y / 100;
                 mdlVelocity += mdlVelocityAdd;
                 if (mainCamera == camera1)
                 {
-                    
+                    // if we are in third person view, quickly move the tank turret and barrel based on the right thumbstick
                         mdlBarrelPitch += gameState.ThumbSticks.Right.Y * 0.1f * 0.1f;
                     
                     mdlTurretRotation -= gameState.ThumbSticks.Right.X * 0.25f * 0.1f;
                 }
                 if (mainCamera == camera2)
                 {
-                    
+                    // if we are in first person view, slowly move the tank turret and barrel based on the right thumbstick.
                         mdlBarrelPitch += gameState.ThumbSticks.Right.Y * 0.1f * 0.025f;
                     
                     mdlTurretRotation -= gameState.ThumbSticks.Right.X * 0.25f * 0.025f;
                     
                 }
+                // upper limits of the barrel. Tanks cannot exceed this limit in real life and the model would look fairly silly aiming straight up.
                 if (mdlBarrelPitch > 0.2f)
                 {
                     mdlBarrelPitch = 0.2f;
                 }
+                // lower limit of the barrel. same as above.
                 if (mdlBarrelPitch < -0.12f)
                 {
                     mdlBarrelPitch = -0.12f;
                 }
+                // rotates the whole tank based on the left thumbstick input.
                 mdlRotation += gameState.ThumbSticks.Left.X * ((-0.25f * 0.07f) / ((mdlVelocity.Length() + 0.1f) * 7));
             }
 
@@ -310,7 +320,7 @@ namespace GP3coursework
 
             if (keyboardState.IsKeyDown(Keys.R))
             {
-                
+                // reset the game back to default
                 ResetDaleks();
                 //tardisSoundInstance.Play();
             }
@@ -318,7 +328,7 @@ namespace GP3coursework
             
             if (keyboardState.IsKeyDown(Keys.LeftShift) && !lastState.IsKeyDown(Keys.LeftShift))
             {
-                // Rotate right.
+                // if the user presses shift, switch between the two cameras.
                 if (mainCamera == camera2)
                 {
                     mainCamera = camera1;
@@ -335,13 +345,14 @@ namespace GP3coursework
             
             if (!keyboardState.IsKeyDown(Keys.Z))
             {
-                // Rotate right.
+                // moves the camera to where it should be. note it uses the "moveTowards" method which has the camera move through to the position, instead of instantly towards it.
                 camera1.MoveTowards(mdlPosition - Matrix.CreateRotationY(mdlTurretRotation + mdlRotation).Forward*10 + new Vector3(0,5-mdlBarrelPitch*4,0), 
                     Matrix.CreateRotationY(mdlTurretRotation + mdlRotation).Forward * 5 + mdlPosition + new Vector3(0,2 +mdlBarrelPitch*5,0));
-                //Vector3 offset = new Vector3(0, 0.93402f*2, 0);
+                
                 Vector3 offset = new Vector3(0, 0.94002f * 2, 0);
+                // since camera2 is based inside the tank barrel, it needs to move instantly rather than slowly. as such it uses the move method
                 camera2.Move(mdlPosition + offset + (Matrix.CreateRotationX(mdlBarrelPitch)*Matrix.CreateRotationY(mdlRotation + mdlTurretRotation)).Forward * 3.5f + Matrix.CreateRotationY(mdlRotation + mdlTurretRotation).Forward * 0.93402f, mdlPosition + offset + (Matrix.CreateRotationX(mdlBarrelPitch) * Matrix.CreateRotationY(mdlRotation + mdlTurretRotation)).Forward * 50);
-                //camera2.MoveTowards(camera2.camPosition, camera2.camLookat);
+                
                 setUpEffectTransforms();
             }
 
@@ -394,6 +405,8 @@ namespace GP3coursework
 
         private void CheckSpeed()
         {
+            // check how fast the player is going, if the player is going too fast to be in sniper mode, AND sniper mode is active, disable sniper mode
+            // also pitches the sound of the tanks engine based on how fast we are going.
             engineSoundInstance.Pitch = 0.1f+ mdlVelocity.Length();
             if (mdlVelocity.Length() > 0.01f)
             {
@@ -410,6 +423,7 @@ namespace GP3coursework
 
         private void ResetDaleks()
         {
+            // resets all the game variables back to default
             mdlVelocity = Vector3.Zero;
             mdlPosition = Vector3.Zero;
             mdlRotation = 0.0f;
@@ -564,7 +578,7 @@ namespace GP3coursework
             setUpEffectTransforms();
 
 
-
+            // loads the splash screens
             mainMenu = Content.Load<Texture2D>(".\\Textures\\mainmenu");
             instructions = Content.Load<Texture2D>(".\\Textures\\instructions");
             gameOver = Content.Load<Texture2D>(".\\Textures\\gameover");
@@ -592,7 +606,7 @@ namespace GP3coursework
             engineSoundInstance.Play();
 
 
-             // TODO: use this.Content to load your game content here
+            
         }
 
         /// <summary>
@@ -625,7 +639,7 @@ namespace GP3coursework
                     state = "gameover";
                     ResetDaleks();
                 }
-                // TODO: Add your update logic here
+                
                 MoveModel();
                 CheckSpeed();
 
@@ -651,19 +665,7 @@ namespace GP3coursework
                     }
                 }
 
-                Vector3 tankForward = Matrix.CreateRotationY(mdlRotation).Forward;
-                Vector3 tankRight = Vector3.Cross(tankForward, Vector3.Up);
-                /*
-                BoundingBox TankBox =
-                  new BoundingBox(mdlPosition - tankForward * 4 - Vector3.Cross(tankForward,Vector3.Up) * 2,
-                                  mdlPosition + tankForward * 4 + Vector3.Cross(tankForward, Vector3.Up) * 2);
-
-                BoundingBox northWall = new BoundingBox(new Vector3(46.5f, -10, -46.5f), new Vector3(-46.5f, 10, -47.5f));
-                if (TankBox.Intersects(northWall))
-                {
-                    mdlVelocity = new Vector3(mdlVelocity.X, mdlVelocity.Y, -mdlVelocity.Z);
-                }*/
-
+                // limits the tank to the boundary of the game world.
                 if (mdlPosition.X > 44)
                 {
                     mdlPosition = new Vector3(44, mdlPosition.Y, mdlPosition.Z);
